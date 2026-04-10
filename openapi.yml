@@ -1,0 +1,460 @@
+openapi: "3.0.3"
+info:
+  title: Wishlist API
+  version: "1.0"
+  description: API for managing wishlists and gift items.
+
+servers:
+  - url: http://localhost:8080/api/v1
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "409":
+          description: Email already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      summary: Log in
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /wishlists:
+    get:
+      summary: List my wishlists
+      tags: [wishlists]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Wishlist"
+
+    post:
+      summary: Create a wishlist
+      tags: [wishlists]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WishlistInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wishlist"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /wishlists/{id}:
+    get:
+      summary: Get wishlist by id
+      tags: [wishlists]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WishlistWithItems"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Update wishlist
+      tags: [wishlists]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WishlistInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wishlist"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Delete wishlist
+      tags: [wishlists]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /wishlists/{id}/items:
+    get:
+      summary: List items in a wishlist
+      tags: [items]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+
+    post:
+      summary: Add item to wishlist
+      tags: [items]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /wishlists/{id}/items/{itemId}:
+    put:
+      summary: Update item
+      tags: [items]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+        - $ref: "#/components/parameters/ItemId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Delete item
+      tags: [items]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+        - $ref: "#/components/parameters/ItemId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /shared/{token}:
+    get:
+      summary: View wishlist by share token (no auth)
+      tags: [public]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WishlistWithItems"
+        "404":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /shared/{token}/items/{itemId}/reserve:
+    post:
+      summary: Reserve an item (no auth)
+      tags: [public]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ItemId"
+      responses:
+        "200":
+          description: Reserved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Already reserved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    WishlistId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  schemas:
+    AuthRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: "secret123"
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+
+    WishlistInput:
+      type: object
+      required: [title, event_date]
+      properties:
+        title:
+          type: string
+          example: Birthday 2026
+        description:
+          type: string
+          example: Things I'd like to get
+        event_date:
+          type: string
+          format: date
+          example: "2026-06-15"
+
+    Wishlist:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        event_date:
+          type: string
+          format: date
+        share_token:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WishlistWithItems:
+      allOf:
+        - $ref: "#/components/schemas/Wishlist"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Item"
+
+    ItemInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          example: Mechanical keyboard
+        description:
+          type: string
+          example: Cherry MX Brown switches
+        url:
+          type: string
+          format: uri
+          example: https://example.com/keyboard
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        wishlist_id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        priority:
+          type: integer
+        is_reserved:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: something went wrong
