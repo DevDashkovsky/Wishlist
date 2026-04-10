@@ -489,15 +489,15 @@ components:
       in: path
       required: true
       schema:
-        type: integer
-        format: int64
+        type: string
+        format: uuid
     ItemId:
       name: itemId
       in: path
       required: true
       schema:
-        type: integer
-        format: int64
+        type: string
+        format: uuid
 
   schemas:
     AuthRequest:
@@ -549,8 +549,8 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         title:
           type: string
         description:
@@ -581,8 +581,8 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         title:
           type: string
         description:
@@ -644,11 +644,11 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         wishlist_id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         title:
           type: string
         description:
