@@ -9,15 +9,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserRepository struct {
+type UserRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
-	return &UserRepository{pool: pool}
+func NewUserRepo(pool *pgxpool.Pool) *UserRepo {
+	return &UserRepo{pool: pool}
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, u *domain.User) error {
+func (r *UserRepo) CreateUser(ctx context.Context, u *domain.User) error {
 	return r.pool.QueryRow(ctx,
 		`INSERT INTO users (email, password_hash)
 		 VALUES ($1, $2)
@@ -26,7 +26,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, u *domain.User) error {
 	).Scan(&u.ID, &u.CreatedAt)
 }
 
-func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var u domain.User
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, email, password_hash, created_at

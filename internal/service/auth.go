@@ -16,11 +16,11 @@ var (
 )
 
 type AuthService struct {
-	users *repository.UserRepository
+	users *repository.UserRepo
 	jwt   *jwt.Manager
 }
 
-func NewAuthService(users *repository.UserRepository, jwt *jwt.Manager) *AuthService {
+func NewAuthService(users *repository.UserRepo, jwt *jwt.Manager) *AuthService {
 	return &AuthService{users: users, jwt: jwt}
 }
 

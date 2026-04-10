@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	Port       string
-	DatabaseURL        string
-	JWTSecret  string
-	JWTExpiry  time.Duration
+	Port        string
+	DatabaseURL string
+	JWTSecret   string
+	JWTExpiry   time.Duration
 }
 
 func Load() (*Config, error) {
@@ -30,10 +30,10 @@ func Load() (*Config, error) {
 	expiryMinutes, _ := strconv.Atoi(getEnv("JWT_EXPIRY_MINUTES", "60"))
 
 	return &Config{
-		Port:      port,
-		DatabaseURL:       dsn,
-		JWTSecret: jwtSecret,
-		JWTExpiry: time.Duration(expiryMinutes) * time.Minute,
+		Port:        port,
+		DatabaseURL: dsn,
+		JWTSecret:   jwtSecret,
+		JWTExpiry:   time.Duration(expiryMinutes) * time.Minute,
 	}, nil
 }
 
