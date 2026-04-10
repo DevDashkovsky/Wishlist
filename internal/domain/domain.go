@@ -15,7 +15,7 @@ type User struct {
 
 type Wishlist struct {
 	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"-"`
+	UserID      int64     `json:"-"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	EventDate   string    `json:"event_date"`
