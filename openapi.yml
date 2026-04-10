@@ -31,12 +31,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: email already taken
         "422":
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: "password must be at least 8 characters"
 
   /auth/login:
     post:
@@ -61,6 +65,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: invalid email or password
 
   /wishlists:
     get:
@@ -77,6 +83,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Wishlist"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       summary: Create a wishlist
@@ -96,12 +104,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Wishlist"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "422":
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: title is required
 
   /wishlists/{id}:
     get:
@@ -118,15 +130,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WishlistWithItems"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
         "404":
           description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: wishlist not found
 
     put:
-      summary: Update wishlist
+      summary: Replace wishlist
       tags: [wishlists]
       security:
         - bearerAuth: []
@@ -145,12 +169,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Wishlist"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
         "404":
           description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: wishlist not found
+
+    patch:
+      summary: Partially update wishlist
+      tags: [wishlists]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WishlistPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wishlist"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: wishlist not found
 
     delete:
       summary: Delete wishlist
@@ -162,31 +237,26 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
         "404":
           description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: wishlist not found
 
   /wishlists/{id}/items:
-    get:
-      summary: List items in a wishlist
-      tags: [items]
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/WishlistId"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Item"
-
     post:
       summary: Add item to wishlist
       tags: [items]
@@ -207,16 +277,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Item"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "422":
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: title is required
 
   /wishlists/{id}/items/{itemId}:
     put:
-      summary: Update item
+      summary: Replace item
       tags: [items]
       security:
         - bearerAuth: []
@@ -236,12 +310,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Item"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
         "404":
           description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: item not found
+
+    patch:
+      summary: Partially update item
+      tags: [items]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/WishlistId"
+        - $ref: "#/components/parameters/ItemId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: item not found
 
     delete:
       summary: Delete item
@@ -254,12 +380,24 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: forbidden
         "404":
           description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: item not found
 
   /shared/{token}:
     get:
@@ -277,18 +415,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WishlistWithItems"
+                $ref: "#/components/schemas/PublicWishlistWithItems"
         "404":
           description: Invalid or expired token
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: wishlist not found
 
   /shared/{token}/items/{itemId}/reserve:
     post:
       summary: Reserve an item (no auth)
       tags: [public]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
       parameters:
         - name: token
           in: path
@@ -309,12 +455,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: item not found
         "409":
           description: Already reserved
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: item already reserved
 
 components:
   securitySchemes:
@@ -322,6 +472,16 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: unauthorized
 
   parameters:
     WishlistId:
@@ -374,6 +534,17 @@ components:
           format: date
           example: "2026-06-15"
 
+    WishlistPatch:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        event_date:
+          type: string
+          format: date
+
     Wishlist:
       type: object
       properties:
@@ -406,6 +577,33 @@ components:
               items:
                 $ref: "#/components/schemas/Item"
 
+    PublicWishlist:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        event_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+
+    PublicWishlistWithItems:
+      allOf:
+        - $ref: "#/components/schemas/PublicWishlist"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Item"
+
     ItemInput:
       type: object
       required: [title]
@@ -425,6 +623,22 @@ components:
           minimum: 1
           maximum: 5
           default: 3
+          description: "1 = nice to have, 5 = must have"
+
+    ItemPatch:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+          format: uri
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
 
     Item:
       type: object
@@ -441,6 +655,7 @@ components:
           type: string
         url:
           type: string
+          format: uri
         priority:
           type: integer
         is_reserved:
@@ -457,4 +672,3 @@ components:
       properties:
         error:
           type: string
-          example: something went wrong
