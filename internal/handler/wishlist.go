@@ -38,7 +38,7 @@ func (h *WishlistHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserID(r.Context())
 	wl, err := h.wishlists.Create(r.Context(), userID, input)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "something went wrong")
+		handleServiceError(w, err)
 		return
 	}
 
