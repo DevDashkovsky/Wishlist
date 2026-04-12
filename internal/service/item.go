@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"wishlist-api/internal/domain"
-	"wishlist-api/internal/repository"
 
 	"github.com/google/uuid"
 )
@@ -14,12 +13,23 @@ var (
 	ErrAlreadyReserved = errors.New("item already reserved")
 )
 
-type ItemService struct {
-	items     *repository.ItemRepo
-	wishlists *repository.WishlistRepo
+type ItemRepository interface {
+	Create(ctx context.Context, item *domain.Item) error
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.Item, error)
+	Update(ctx context.Context, item *domain.Item) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
-func NewItemService(items *repository.ItemRepo, wishlists *repository.WishlistRepo) *ItemService {
+type WishlistRepository interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error)
+}
+
+type ItemService struct {
+	items     ItemRepository
+	wishlists WishlistRepository
+}
+
+func NewItemService(items ItemRepository, wishlists WishlistRepository) *ItemService {
 	return &ItemService{items: items, wishlists: wishlists}
 }
 
