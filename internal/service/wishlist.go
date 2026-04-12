@@ -7,7 +7,6 @@ import (
 	"errors"
 	"time"
 	"wishlist-api/internal/domain"
-	"wishlist-api/internal/repository"
 
 	"github.com/google/uuid"
 )
@@ -28,12 +27,24 @@ func parseDate(s string) (time.Time, error) {
 	return t, nil
 }
 
-type WishlistService struct {
-	wishlists *repository.WishlistRepo
-	items     *repository.ItemRepo
+type WishlistFullRepository interface {
+	Create(ctx context.Context, w *domain.Wishlist) error
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error)
+	ListByUserID(ctx context.Context, userID int64) ([]domain.Wishlist, error)
+	Update(ctx context.Context, w *domain.Wishlist) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
-func NewWishlistService(wishlists *repository.WishlistRepo, items *repository.ItemRepo) *WishlistService {
+type WishlistItemRepository interface {
+	ListByWishlistID(ctx context.Context, wishlistID uuid.UUID) ([]domain.Item, error)
+}
+
+type WishlistService struct {
+	wishlists WishlistFullRepository
+	items     WishlistItemRepository
+}
+
+func NewWishlistService(wishlists WishlistFullRepository, items WishlistItemRepository) *WishlistService {
 	return &WishlistService{wishlists: wishlists, items: items}
 }
 
