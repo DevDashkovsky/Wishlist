@@ -5,7 +5,6 @@ import (
 	"errors"
 	"wishlist-api/internal/domain"
 	"wishlist-api/internal/jwt"
-	"wishlist-api/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,12 +14,17 @@ var (
 	ErrInvalidCredentials = errors.New("invalid email or password")
 )
 
+type UserRepository interface {
+	CreateUser(ctx context.Context, u *domain.User) error
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+}
+
 type AuthService struct {
-	users *repository.UserRepo
+	users UserRepository
 	jwt   *jwt.Manager
 }
 
-func NewAuthService(users *repository.UserRepo, jwt *jwt.Manager) *AuthService {
+func NewAuthService(users UserRepository, jwt *jwt.Manager) *AuthService {
 	return &AuthService{users: users, jwt: jwt}
 }
 
