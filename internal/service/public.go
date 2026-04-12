@@ -3,17 +3,26 @@ package service
 import (
 	"context"
 	"wishlist-api/internal/domain"
-	"wishlist-api/internal/repository"
 
 	"github.com/google/uuid"
 )
 
-type PublicService struct {
-	wishlists *repository.WishlistRepo
-	items     *repository.ItemRepo
+type PublicWishlistRepository interface {
+	GetByShareToken(ctx context.Context, token string) (*domain.Wishlist, error)
 }
 
-func NewPublicService(wishlists *repository.WishlistRepo, items *repository.ItemRepo) *PublicService {
+type PublicItemRepository interface {
+	ListByWishlistID(ctx context.Context, wishlistID uuid.UUID) ([]domain.Item, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.Item, error)
+	Reserve(ctx context.Context, id uuid.UUID) (*domain.Item, error)
+}
+
+type PublicService struct {
+	wishlists PublicWishlistRepository
+	items     PublicItemRepository
+}
+
+func NewPublicService(wishlists PublicWishlistRepository, items PublicItemRepository) *PublicService {
 	return &PublicService{wishlists: wishlists, items: items}
 }
 
