@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Port        string
-	DatabaseURL string
-	JWTSecret   string
-	JWTExpiry   time.Duration
+	Port          string
+	DatabaseURL   string
+	JWTSecret     string
+	JWTExpiry     time.Duration
+	MigrationsDir string
 }
 
 func Load() (*Config, error) {
@@ -27,13 +28,21 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	expiryMinutes, _ := strconv.Atoi(getEnv("JWT_EXPIRY_MINUTES", "60"))
+	expiryRaw := getEnv("JWT_EXPIRY_MINUTES", "60")
+	expiryMinutes, err := strconv.Atoi(expiryRaw)
+	if err != nil {
+		return nil, fmt.Errorf("JWT_EXPIRY_MINUTES must be an integer number of minutes, got %q: %w", expiryRaw, err)
+	}
+	if expiryMinutes <= 0 {
+		return nil, fmt.Errorf("JWT_EXPIRY_MINUTES must be positive, got %d", expiryMinutes)
+	}
 
 	return &Config{
-		Port:        port,
-		DatabaseURL: dsn,
-		JWTSecret:   jwtSecret,
-		JWTExpiry:   time.Duration(expiryMinutes) * time.Minute,
+		Port:          port,
+		DatabaseURL:   dsn,
+		JWTSecret:     jwtSecret,
+		JWTExpiry:     time.Duration(expiryMinutes) * time.Minute,
+		MigrationsDir: getEnv("MIGRATIONS_DIR", "./migrations"),
 	}, nil
 }
 

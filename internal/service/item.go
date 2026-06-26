@@ -88,6 +88,10 @@ func (s *ItemService) Patch(ctx context.Context, userID int64, wishlistID uuid.U
 		return nil, ErrItemNotFound
 	}
 
+	if input.Title == nil && input.Description == nil && input.URL == nil && input.Priority == nil {
+		return item, nil
+	}
+
 	if input.Title != nil {
 		item.Title = *input.Title
 	}

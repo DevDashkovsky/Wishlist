@@ -23,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := db.RunMigrations(cfg.DatabaseURL, "/app/migrations"); err != nil {
+	if err := db.RunMigrations(cfg.DatabaseURL, cfg.MigrationsDir); err != nil {
 		log.Fatal("migrations: ", err)
 	}
 
@@ -53,10 +53,14 @@ func main() {
 	router := handler.NewRouter(jwtManager, authHandler, wishlistHandler, itemHandler, publicHandler)
 
 	srv := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: router,
+		Addr:              ":" + cfg.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
-	
+
 	go func() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -66,7 +70,7 @@ func main() {
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
-			log.Fatal("shutdown: ", err)
+			log.Println("shutdown: ", err)
 		}
 	}()
 

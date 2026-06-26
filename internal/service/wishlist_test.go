@@ -51,6 +51,29 @@ func wlOwned() *domain.Wishlist {
 	return &domain.Wishlist{ID: wlTestID, UserID: wlTestUserID, Title: "Birthday"}
 }
 
+func TestWishlistPatch_EmptyBodyIsNoOp(t *testing.T) {
+	svc := NewWishlistService(
+		&mockWishlistFullRepo{
+			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error) {
+				return wlOwned(), nil
+			},
+			update: func(ctx context.Context, w *domain.Wishlist) error {
+				t.Fatal("Update must not be called for an empty patch")
+				return nil
+			},
+		},
+		&mockWishlistItemRepo{},
+	)
+
+	wl, err := svc.Patch(context.Background(), wlTestUserID, wlTestID, domain.WishlistPatch{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if wl == nil || wl.Title != "Birthday" {
+		t.Errorf("expected unchanged wishlist, got %+v", wl)
+	}
+}
+
 func TestWishlistCreate_Success(t *testing.T) {
 	svc := NewWishlistService(
 		&mockWishlistFullRepo{

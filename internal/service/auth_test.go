@@ -69,6 +69,28 @@ func TestRegister_EmailTaken(t *testing.T) {
 	}
 }
 
+func TestRegister_RaceEmailTaken(t *testing.T) {
+	repo := &mockUserRepo{
+		getUserByEmail: func(ctx context.Context, email string) (*domain.User, error) {
+			return nil, nil
+		},
+		createUser: func(ctx context.Context, u *domain.User) error {
+			return domain.ErrEmailTaken
+		},
+	}
+
+	svc := NewAuthService(repo, testJWTManager())
+
+	_, err := svc.Register(context.Background(), domain.RegisterInput{
+		Email:    "race@race.com",
+		Password: "test1234",
+	})
+
+	if !errors.Is(err, ErrEmailTaken) {
+		t.Errorf("got %v, want ErrEmailTaken", err)
+	}
+}
+
 func TestLogin_Success(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("secret123"), bcrypt.DefaultCost)
 

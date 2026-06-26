@@ -117,6 +117,10 @@ func (s *WishlistService) Patch(ctx context.Context, userID int64, id uuid.UUID,
 		return nil, err
 	}
 
+	if input.Title == nil && input.Description == nil && input.EventDate == nil {
+		return w, nil
+	}
+
 	if input.Title != nil {
 		w.Title = *input.Title
 	}

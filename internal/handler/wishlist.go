@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"wishlist-api/internal/domain"
 	"wishlist-api/internal/middleware"
@@ -49,7 +50,7 @@ func (h *WishlistHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserID(r.Context())
 	list, err := h.wishlists.List(r.Context(), userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "something went wrong")
+		handleServiceError(w, err)
 		return
 	}
 	if list == nil {
@@ -159,6 +160,7 @@ func handleServiceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, service.ErrInvalidDate):
 		writeError(w, http.StatusUnprocessableEntity, "invalid date format, expected YYYY-MM-DD")
 	default:
+		log.Printf("internal error: %v", err)
 		writeError(w, http.StatusInternalServerError, "something went wrong")
 	}
 }

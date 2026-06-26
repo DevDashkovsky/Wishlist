@@ -75,6 +75,9 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, "title is required")
 		return
 	}
+	if input.Priority == 0 {
+		input.Priority = 3
+	}
 	if input.Priority < 1 || input.Priority > 5 {
 		writeError(w, http.StatusUnprocessableEntity, "priority must be between 1 and 5")
 		return

@@ -1,10 +1,13 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var ErrEmailTaken = errors.New("email already taken")
 
 type User struct {
 	ID           int64     `json:"id"`

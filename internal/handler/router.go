@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"wishlist-api/internal/jwt"
 	"wishlist-api/internal/middleware"
 
@@ -15,6 +17,12 @@ func NewRouter(
 	public *PublicHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Use(LimitBody)
+
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/register", auth.Register)

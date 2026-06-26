@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"wishlist-api/internal/domain"
@@ -40,6 +41,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Printf("internal error: %v", err)
 		writeError(w, http.StatusInternalServerError, "something went wrong")
 		return
 	}
@@ -62,6 +64,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Printf("internal error: %v", err)
 		writeError(w, http.StatusInternalServerError, "something went wrong")
 		return
 	}

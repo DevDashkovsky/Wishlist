@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrEmailTaken         = errors.New("email already taken")
+	ErrEmailTaken         = domain.ErrEmailTaken
 	ErrInvalidCredentials = errors.New("invalid email or password")
 )
 
