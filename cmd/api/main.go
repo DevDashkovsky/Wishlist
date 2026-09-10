@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -18,19 +20,26 @@ import (
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := run(ctx); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(ctx context.Context) error {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := db.RunMigrations(cfg.DatabaseURL, cfg.MigrationsDir); err != nil {
-		log.Fatal("migrations: ", err)
+		return fmt.Errorf("migrations: %w", err)
 	}
 
-	ctx := context.Background()
 	pool, err := db.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("db: ", err)
+		return fmt.Errorf("db: %w", err)
 	}
 	defer pool.Close()
 
@@ -61,21 +70,34 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sigCh
-
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			log.Println("shutdown: ", err)
-		}
-	}()
-
+	listener, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
 	log.Printf("listening on :%s", cfg.Port)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+	return serve(ctx, srv, listener, 10*time.Second)
+}
+
+func serve(ctx context.Context, srv *http.Server, listener net.Listener, timeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() { done <- srv.Serve(listener) }()
+	select {
+	case err := <-done:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		err := srv.Shutdown(shutdownCtx)
+		if err != nil {
+			err = errors.Join(err, srv.Close())
+		}
+		serveErr := <-done
+		if !errors.Is(serveErr, http.ErrServerClosed) {
+			err = errors.Join(err, serveErr)
+		}
+		return err
 	}
 }
