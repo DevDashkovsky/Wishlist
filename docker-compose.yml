@@ -6,7 +6,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: wishlist
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 2s
@@ -16,12 +18,24 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${PORT:-8080}:8080"
     environment:
-      PORT: ${PORT:-8080}
-      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@db:5432/wishlist?sslmode=disable}
-      JWT_SECRET: ${JWT_SECRET:-BigPencil123}
+      PORT: 8080
+      DATABASE_URL: postgres://postgres:postgres@db:5432/wishlist?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-}
       JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES:-60}
+    volumes:
+      - jwt_state:/app/state
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    stop_grace_period: 15s
+
+volumes:
+  postgres_data:
+  jwt_state:

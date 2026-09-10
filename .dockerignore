@@ -1,0 +1,11 @@
+.git
+.idea
+.claude
+.codex
+.agents
+.env
+**/.DS_Store
+bin
+coverage.out
+*_REVIEW.md
+REVIEW.md

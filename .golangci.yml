@@ -1,0 +1,12 @@
+version: "2"
+run:
+  timeout: 3m
+  modules-download-mode: readonly
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - sqlclosecheck
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
