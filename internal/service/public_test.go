@@ -131,7 +131,7 @@ func TestPublicReserve_AlreadyReserved(t *testing.T) {
 				return &domain.Item{ID: publicItemID, WishlistID: publicWishlistID, IsReserved: true}, nil
 			},
 			reserve: func(ctx context.Context, id uuid.UUID) (*domain.Item, error) {
-				return nil, nil // уже забронирован — returning nil
+				return nil, nil
 			},
 		},
 	)
@@ -171,7 +171,6 @@ func TestPublicReserve_ItemNotFound(t *testing.T) {
 		},
 		&mockPublicItemRepo{
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Item, error) {
-				// айтем существует, но принадлежит другому вишлисту
 				return &domain.Item{ID: id, WishlistID: otherWishlistID}, nil
 			},
 		},

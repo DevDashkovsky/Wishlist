@@ -10,6 +10,7 @@ import (
 )
 
 type mockItemRepo struct {
+	patch   func(context.Context, uuid.UUID, domain.ItemPatch) (*domain.Item, error)
 	create  func(ctx context.Context, item *domain.Item) error
 	getByID func(ctx context.Context, id uuid.UUID) (*domain.Item, error)
 	update  func(ctx context.Context, item *domain.Item) error
@@ -24,6 +25,9 @@ func (m *mockItemRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Item,
 }
 func (m *mockItemRepo) Update(ctx context.Context, item *domain.Item) error {
 	return m.update(ctx, item)
+}
+func (m *mockItemRepo) Patch(ctx context.Context, id uuid.UUID, input domain.ItemPatch) (*domain.Item, error) {
+	return m.patch(ctx, id, input)
 }
 func (m *mockItemRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return m.delete(ctx, id)
@@ -90,7 +94,7 @@ func TestItemCreate_WishlistNotFound(t *testing.T) {
 		&mockItemRepo{},
 		&mockWishlistRepo{
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error) {
-				return nil, nil // вишлист не найден
+				return nil, nil
 			},
 		},
 	)
@@ -110,7 +114,7 @@ func TestItemCreate_Forbidden(t *testing.T) {
 		&mockItemRepo{},
 		&mockWishlistRepo{
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error) {
-				return ownedWishlist(), nil // владелец — testUserID
+				return ownedWishlist(), nil
 			},
 		},
 	)
@@ -162,7 +166,7 @@ func TestItemUpdate_ItemNotFound(t *testing.T) {
 	svc := NewItemService(
 		&mockItemRepo{
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Item, error) {
-				return nil, nil // айтем не найден
+				return nil, nil
 			},
 		},
 		&mockWishlistRepo{
@@ -188,8 +192,18 @@ func TestItemPatch_Success(t *testing.T) {
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Item, error) {
 				return testItem(), nil
 			},
-			update: func(ctx context.Context, item *domain.Item) error {
-				return nil
+			patch: func(ctx context.Context, id uuid.UUID, changes domain.ItemPatch) (*domain.Item, error) {
+				if changes.Description != nil || changes.URL != nil {
+					t.Fatal("patch forwarded unchanged fields")
+				}
+				item := testItem()
+				if changes.Title != nil {
+					item.Title = *changes.Title
+				}
+				if changes.Priority != nil {
+					item.Priority = *changes.Priority
+				}
+				return item, nil
 			},
 		},
 		&mockWishlistRepo{

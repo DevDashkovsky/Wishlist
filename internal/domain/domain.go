@@ -7,7 +7,18 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrEmailTaken = errors.New("email already taken")
+var (
+	ErrEmailTaken       = errors.New("email already taken")
+	ErrWishlistNotFound = errors.New("wishlist not found")
+	ErrItemNotFound     = errors.New("item not found")
+	ErrAlreadyReserved  = errors.New("item already reserved")
+)
+
+type WishlistChanges struct {
+	Title       *string
+	Description *string
+	EventDate   *time.Time
+}
 
 type User struct {
 	ID           int64     `json:"id"`

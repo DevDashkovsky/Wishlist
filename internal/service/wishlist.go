@@ -14,14 +14,14 @@ import (
 const dateFormat = "2006-01-02"
 
 var (
-	ErrWishlistNotFound = errors.New("wishlist not found")
+	ErrWishlistNotFound = domain.ErrWishlistNotFound
 	ErrForbidden        = errors.New("forbidden")
 	ErrInvalidDate      = errors.New("invalid date format, expected YYYY-MM-DD")
 )
 
 func parseDate(s string) (time.Time, error) {
 	t, err := time.Parse(dateFormat, s)
-	if err != nil {
+	if err != nil || t.Year() < 1 || t.Year() > 9999 {
 		return time.Time{}, ErrInvalidDate
 	}
 	return t, nil
@@ -32,6 +32,7 @@ type WishlistFullRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error)
 	ListByUserID(ctx context.Context, userID int64) ([]domain.Wishlist, error)
 	Update(ctx context.Context, w *domain.Wishlist) error
+	Patch(ctx context.Context, id uuid.UUID, changes domain.WishlistChanges) (*domain.Wishlist, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -83,6 +84,9 @@ func (s *WishlistService) GetByID(ctx context.Context, userID int64, id uuid.UUI
 		return nil, err
 	}
 
+	if items == nil {
+		items = []domain.Item{}
+	}
 	return &domain.WishlistWithItems{Wishlist: *w, Items: items}, nil
 }
 
@@ -121,24 +125,15 @@ func (s *WishlistService) Patch(ctx context.Context, userID int64, id uuid.UUID,
 		return w, nil
 	}
 
-	if input.Title != nil {
-		w.Title = *input.Title
-	}
-	if input.Description != nil {
-		w.Description = *input.Description
-	}
+	changes := domain.WishlistChanges{Title: input.Title, Description: input.Description}
 	if input.EventDate != nil {
-		eventDate, err := parseDate(*input.EventDate)
+		date, err := parseDate(*input.EventDate)
 		if err != nil {
 			return nil, err
 		}
-		w.EventDate = eventDate
+		changes.EventDate = &date
 	}
-
-	if err := s.wishlists.Update(ctx, w); err != nil {
-		return nil, err
-	}
-	return w, nil
+	return s.wishlists.Patch(ctx, id, changes)
 }
 
 func (s *WishlistService) Delete(ctx context.Context, userID int64, id uuid.UUID) error {

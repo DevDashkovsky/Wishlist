@@ -40,6 +40,9 @@ func (s *PublicService) GetByShareToken(ctx context.Context, token string) (*dom
 		return nil, err
 	}
 
+	if items == nil {
+		items = []domain.Item{}
+	}
 	pub := &domain.PublicWishlistWithItems{
 		PublicWishlist: domain.PublicWishlist{
 			ID:          w.ID,

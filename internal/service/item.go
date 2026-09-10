@@ -2,21 +2,21 @@ package service
 
 import (
 	"context"
-	"errors"
 	"wishlist-api/internal/domain"
 
 	"github.com/google/uuid"
 )
 
 var (
-	ErrItemNotFound    = errors.New("item not found")
-	ErrAlreadyReserved = errors.New("item already reserved")
+	ErrItemNotFound    = domain.ErrItemNotFound
+	ErrAlreadyReserved = domain.ErrAlreadyReserved
 )
 
 type ItemRepository interface {
 	Create(ctx context.Context, item *domain.Item) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Item, error)
 	Update(ctx context.Context, item *domain.Item) error
+	Patch(ctx context.Context, id uuid.UUID, changes domain.ItemPatch) (*domain.Item, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -92,23 +92,7 @@ func (s *ItemService) Patch(ctx context.Context, userID int64, wishlistID uuid.U
 		return item, nil
 	}
 
-	if input.Title != nil {
-		item.Title = *input.Title
-	}
-	if input.Description != nil {
-		item.Description = *input.Description
-	}
-	if input.URL != nil {
-		item.URL = *input.URL
-	}
-	if input.Priority != nil {
-		item.Priority = *input.Priority
-	}
-
-	if err := s.items.Update(ctx, item); err != nil {
-		return nil, err
-	}
-	return item, nil
+	return s.items.Patch(ctx, itemID, input)
 }
 
 func (s *ItemService) Delete(ctx context.Context, userID int64, wishlistID uuid.UUID, itemID uuid.UUID) error {

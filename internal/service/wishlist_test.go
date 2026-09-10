@@ -10,6 +10,7 @@ import (
 )
 
 type mockWishlistFullRepo struct {
+	patch        func(context.Context, uuid.UUID, domain.WishlistChanges) (*domain.Wishlist, error)
 	create       func(ctx context.Context, w *domain.Wishlist) error
 	getByID      func(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error)
 	listByUserID func(ctx context.Context, userID int64) ([]domain.Wishlist, error)
@@ -28,6 +29,9 @@ func (m *mockWishlistFullRepo) ListByUserID(ctx context.Context, userID int64) (
 }
 func (m *mockWishlistFullRepo) Update(ctx context.Context, w *domain.Wishlist) error {
 	return m.update(ctx, w)
+}
+func (m *mockWishlistFullRepo) Patch(ctx context.Context, id uuid.UUID, input domain.WishlistChanges) (*domain.Wishlist, error) {
+	return m.patch(ctx, id, input)
 }
 func (m *mockWishlistFullRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return m.delete(ctx, id)
@@ -165,7 +169,7 @@ func TestWishlistGetByID_Forbidden(t *testing.T) {
 	svc := NewWishlistService(
 		&mockWishlistFullRepo{
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error) {
-				return wlOwned(), nil // владелец — wlTestUserID
+				return wlOwned(), nil
 			},
 		},
 		&mockWishlistItemRepo{},
@@ -273,8 +277,11 @@ func TestWishlistPatch_Success(t *testing.T) {
 			getByID: func(ctx context.Context, id uuid.UUID) (*domain.Wishlist, error) {
 				return wlOwned(), nil
 			},
-			update: func(ctx context.Context, w *domain.Wishlist) error {
-				return nil
+			patch: func(ctx context.Context, id uuid.UUID, changes domain.WishlistChanges) (*domain.Wishlist, error) {
+				if changes.Description != nil || changes.EventDate != nil {
+					t.Fatal("patch forwarded unchanged fields")
+				}
+				return &domain.Wishlist{ID: id, Title: *changes.Title}, nil
 			},
 		},
 		&mockWishlistItemRepo{},
@@ -347,5 +354,13 @@ func TestWishlistDelete_Forbidden(t *testing.T) {
 
 	if !errors.Is(err, ErrForbidden) {
 		t.Errorf("got %v, want ErrForbidden", err)
+	}
+}
+
+func TestParseDateRejectsUnsupportedYear(t *testing.T) {
+	for _, value := range []string{"0000-01-01", "10000-01-01", "2026-02-30"} {
+		if _, err := parseDate(value); !errors.Is(err, ErrInvalidDate) {
+			t.Errorf("date %q: %v", value, err)
+		}
 	}
 }
