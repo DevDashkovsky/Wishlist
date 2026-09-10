@@ -37,11 +37,11 @@ func (m *Manager) Generate(userID int64) (string, error) {
 
 func (m *Manager) Parse(tokenStr string) (int64, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+		if t.Method != jwt.SigningMethodHS256 {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return m.secret, nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
 	if err != nil {
 		return 0, fmt.Errorf("parse token: %w", err)
 	}
@@ -59,6 +59,9 @@ func (m *Manager) Parse(tokenStr string) (int64, error) {
 	id, err := strconv.ParseInt(sub, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("invalid sub: %w", err)
+	}
+	if id <= 0 {
+		return 0, fmt.Errorf("sub must be positive")
 	}
 	return id, nil
 }

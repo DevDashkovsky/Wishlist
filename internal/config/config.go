@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -17,6 +18,10 @@ type Config struct {
 
 func Load() (*Config, error) {
 	port := getEnv("PORT", "8080")
+	portNumber, err := strconv.Atoi(port)
+	if err != nil || portNumber < 1 || portNumber > 65535 {
+		return nil, fmt.Errorf("PORT must be an integer between 1 and 65535")
+	}
 
 	dsn, err := requireEnv("DATABASE_URL")
 	if err != nil {
@@ -33,8 +38,8 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("JWT_EXPIRY_MINUTES must be an integer number of minutes, got %q: %w", expiryRaw, err)
 	}
-	if expiryMinutes <= 0 {
-		return nil, fmt.Errorf("JWT_EXPIRY_MINUTES must be positive, got %d", expiryMinutes)
+	if expiryMinutes <= 0 || int64(expiryMinutes) > math.MaxInt64/int64(time.Minute) {
+		return nil, fmt.Errorf("JWT_EXPIRY_MINUTES must be positive and fit in time.Duration, got %d", expiryMinutes)
 	}
 
 	return &Config{

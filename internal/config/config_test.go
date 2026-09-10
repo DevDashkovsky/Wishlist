@@ -31,7 +31,7 @@ func TestLoad_Defaults(t *testing.T) {
 
 func TestLoad_InvalidJWTExpiry(t *testing.T) {
 	setRequiredEnv(t)
-	t.Setenv("JWT_EXPIRY_MINUTES", "60m") // a typo that used to be silently swallowed
+	t.Setenv("JWT_EXPIRY_MINUTES", "60m")
 
 	if _, err := Load(); err == nil {
 		t.Fatal("expected error for non-integer JWT_EXPIRY_MINUTES, got nil")
@@ -48,10 +48,27 @@ func TestLoad_NonPositiveJWTExpiry(t *testing.T) {
 }
 
 func TestLoad_MissingDatabaseURL(t *testing.T) {
-	t.Setenv("DATABASE_URL", "") // requireEnv treats empty as unset
+	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "secret")
 
 	if _, err := Load(); err == nil {
 		t.Fatal("expected error when DATABASE_URL is missing, got nil")
+	}
+}
+
+func TestLoadRejectsPortAndDurationOverflow(t *testing.T) {
+	for _, tc := range []struct{ key, value string }{
+		{"PORT", "0"}, {"PORT", "65536"}, {"PORT", "abc"},
+		{"JWT_EXPIRY_MINUTES", "153722868"}, {"JWT_EXPIRY_MINUTES", "9223372036854775807"},
+	} {
+		t.Run(tc.key+tc.value, func(t *testing.T) {
+			setRequiredEnv(t)
+			t.Setenv("PORT", "8080")
+			t.Setenv("JWT_EXPIRY_MINUTES", "60")
+			t.Setenv(tc.key, tc.value)
+			if _, err := Load(); err == nil {
+				t.Fatal("invalid configuration accepted")
+			}
+		})
 	}
 }
