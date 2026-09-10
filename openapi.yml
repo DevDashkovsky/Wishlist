@@ -2,7 +2,14 @@ openapi: "3.0.3"
 info:
   title: Wishlist API
   version: "1.0"
-  description: API for managing wishlists and gift items.
+  description: |
+    API for managing wishlists and gift items.
+    JSON request bodies must be one object, at most 1 MiB including trailing whitespace.
+    Unknown properties, null values and NUL characters are rejected with 422.
+    Titles must contain a non-whitespace character. Dates use YYYY-MM-DD, years 0001–9999.
+    PUT replaces editable fields; PATCH changes only supplied fields; an empty PATCH is a no-op.
+    Server failures return 500 with an Error object. Unknown routes and unsupported methods
+    return JSON Error objects with 404 and 405 respectively.
 
 servers:
   - url: http://localhost:8080/api/v1
@@ -40,7 +47,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                error: "password must be at least 8 characters"
+                error: "password must contain 8 to 72 bytes"
 
   /auth/login:
     post:
@@ -67,6 +74,9 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: invalid email or password
+
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /wishlists:
     get:
@@ -474,6 +484,12 @@ components:
       bearerFormat: JWT
 
   responses:
+    ValidationError:
+      description: Invalid request JSON or field value
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Missing or invalid token
       content:
@@ -502,6 +518,7 @@ components:
   schemas:
     AuthRequest:
       type: object
+      additionalProperties: false
       required: [email, password]
       properties:
         email:
@@ -510,7 +527,7 @@ components:
           example: user@example.com
         password:
           type: string
-          minLength: 8
+          description: "8 to 72 UTF-8 bytes (not character count)."
           example: "secret123"
 
     TokenResponse:
@@ -521,6 +538,7 @@ components:
 
     WishlistInput:
       type: object
+      additionalProperties: false
       required: [title, event_date]
       properties:
         title:
@@ -536,6 +554,7 @@ components:
 
     WishlistPatch:
       type: object
+      additionalProperties: false
       properties:
         title:
           type: string
@@ -606,6 +625,7 @@ components:
 
     ItemInput:
       type: object
+      additionalProperties: false
       required: [title]
       properties:
         title:
@@ -616,17 +636,18 @@ components:
           example: Cherry MX Brown switches
         url:
           type: string
-          format: uri
+          description: "Optional absolute URI, or an empty string. HTTP(S) URIs must have a hostname."
           example: https://example.com/keyboard
         priority:
           type: integer
           minimum: 1
           maximum: 5
           default: 3
-          description: "1 = nice to have, 5 = must have"
+          description: "1 = nice to have, 5 = must have. Omitted on POST/PUT defaults to 3; explicit 0 is invalid."
 
     ItemPatch:
       type: object
+      additionalProperties: false
       properties:
         title:
           type: string
@@ -634,7 +655,7 @@ components:
           type: string
         url:
           type: string
-          format: uri
+          description: "Optional absolute URI, or an empty string. HTTP(S) URIs must have a hostname."
         priority:
           type: integer
           minimum: 1
@@ -655,7 +676,7 @@ components:
           type: string
         url:
           type: string
-          format: uri
+          description: "Optional absolute URI, or an empty string. HTTP(S) URIs must have a hostname."
         priority:
           type: integer
         is_reserved:

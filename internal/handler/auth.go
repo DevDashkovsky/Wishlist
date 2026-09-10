@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/mail"
 	"strings"
 	"wishlist-api/internal/domain"
 	"wishlist-api/internal/service"
@@ -26,12 +27,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 
-	if input.Email == "" || !strings.Contains(input.Email, "@") {
+	if !validEmail(input.Email) {
 		writeError(w, http.StatusUnprocessableEntity, "invalid email format")
 		return
 	}
-	if len(input.Password) < 8 {
-		writeError(w, http.StatusUnprocessableEntity, "password must be at least 8 characters")
+	if len(input.Password) < 8 || len(input.Password) > 72 {
+		writeError(w, http.StatusUnprocessableEntity, "password must contain 8 to 72 bytes")
 		return
 	}
 
@@ -58,6 +59,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 
+	if !validEmail(input.Email) || len(input.Password) < 8 || len(input.Password) > 72 {
+		writeError(w, http.StatusUnprocessableEntity, "invalid email or password format")
+		return
+	}
+
 	token, err := h.auth.Login(r.Context(), input)
 	if errors.Is(err, service.ErrInvalidCredentials) {
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
@@ -70,4 +76,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"token": token})
+}
+
+func validEmail(email string) bool {
+	address, err := mail.ParseAddress(email)
+	return err == nil && address.Address == email && strings.Contains(email, "@")
 }

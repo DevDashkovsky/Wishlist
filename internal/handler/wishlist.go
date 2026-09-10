@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 	"wishlist-api/internal/domain"
 	"wishlist-api/internal/middleware"
 	"wishlist-api/internal/service"
@@ -27,7 +28,7 @@ func (h *WishlistHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Title == "" {
+	if strings.TrimSpace(input.Title) == "" {
 		writeError(w, http.StatusUnprocessableEntity, "title is required")
 		return
 	}
@@ -89,7 +90,7 @@ func (h *WishlistHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Title == "" {
+	if strings.TrimSpace(input.Title) == "" {
 		writeError(w, http.StatusUnprocessableEntity, "title is required")
 		return
 	}
@@ -118,6 +119,11 @@ func (h *WishlistHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	var input domain.WishlistPatch
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		return
+	}
+
+	if input.Title != nil && strings.TrimSpace(*input.Title) == "" {
+		writeError(w, http.StatusUnprocessableEntity, "title is required")
 		return
 	}
 

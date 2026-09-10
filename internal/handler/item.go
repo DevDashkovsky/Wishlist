@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 	"wishlist-api/internal/domain"
 	"wishlist-api/internal/middleware"
 	"wishlist-api/internal/service"
@@ -25,21 +27,23 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input domain.ItemInput
+	input := domain.ItemInput{Priority: 3}
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
 		return
 	}
 
-	if input.Title == "" {
+	if strings.TrimSpace(input.Title) == "" {
 		writeError(w, http.StatusUnprocessableEntity, "title is required")
 		return
 	}
-	if input.Priority == 0 {
-		input.Priority = 3
-	}
 	if input.Priority < 1 || input.Priority > 5 {
 		writeError(w, http.StatusUnprocessableEntity, "priority must be between 1 and 5")
+		return
+	}
+
+	if !validURL(input.URL) {
+		writeError(w, http.StatusUnprocessableEntity, "url must be an absolute URI or empty")
 		return
 	}
 
@@ -65,21 +69,23 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input domain.ItemInput
+	input := domain.ItemInput{Priority: 3}
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
 		return
 	}
 
-	if input.Title == "" {
+	if strings.TrimSpace(input.Title) == "" {
 		writeError(w, http.StatusUnprocessableEntity, "title is required")
 		return
 	}
-	if input.Priority == 0 {
-		input.Priority = 3
-	}
 	if input.Priority < 1 || input.Priority > 5 {
 		writeError(w, http.StatusUnprocessableEntity, "priority must be between 1 and 5")
+		return
+	}
+
+	if !validURL(input.URL) {
+		writeError(w, http.StatusUnprocessableEntity, "url must be an absolute URI or empty")
 		return
 	}
 
@@ -116,6 +122,16 @@ func (h *ItemHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Title != nil && strings.TrimSpace(*input.Title) == "" {
+		writeError(w, http.StatusUnprocessableEntity, "title is required")
+		return
+	}
+
+	if input.URL != nil && !validURL(*input.URL) {
+		writeError(w, http.StatusUnprocessableEntity, "url must be an absolute URI or empty")
+		return
+	}
+
 	userID := middleware.UserID(r.Context())
 	item, err := h.items.Patch(r.Context(), userID, wishlistID, itemID, input)
 	if err != nil {
@@ -145,4 +161,12 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func validURL(value string) bool {
+	if value == "" {
+		return true
+	}
+	parsed, err := url.ParseRequestURI(value)
+	return err == nil && parsed.IsAbs() && ((parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() != "")
 }
