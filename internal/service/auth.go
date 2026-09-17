@@ -14,6 +14,10 @@ var (
 	ErrInvalidCredentials = errors.New("invalid email or password")
 )
 
+// dummyPasswordHash makes login timing independent of whether an email exists.
+// It is a bcrypt hash of a value that is never accepted as a user password.
+const dummyPasswordHash = "$2y$10$LvCAjez3FrIL63Ji3A0oouHLz1k0pPPaHHSu3d9os.YM2dhSytAEa"
+
 type UserRepository interface {
 	CreateUser(ctx context.Context, u *domain.User) error
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
@@ -58,11 +62,12 @@ func (s *AuthService) Login(ctx context.Context, input domain.LoginInput) (strin
 	if err != nil {
 		return "", err
 	}
-	if user == nil {
-		return "", ErrInvalidCredentials
-	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
+	passwordHash := dummyPasswordHash
+	if user != nil {
+		passwordHash = user.PasswordHash
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(input.Password)); user == nil || err != nil {
 		return "", ErrInvalidCredentials
 	}
 

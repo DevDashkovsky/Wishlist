@@ -29,7 +29,7 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	input := domain.ItemInput{Priority: 3}
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	input := domain.ItemInput{Priority: 3}
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h *ItemHandler) Patch(w http.ResponseWriter, r *http.Request) {
 
 	var input domain.ItemPatch
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -168,5 +168,8 @@ func validURL(value string) bool {
 		return true
 	}
 	parsed, err := url.ParseRequestURI(value)
-	return err == nil && parsed.IsAbs() && ((parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() != "")
+	if err != nil || parsed.User != nil || parsed.Hostname() == "" {
+		return false
+	}
+	return strings.EqualFold(parsed.Scheme, "https") || strings.EqualFold(parsed.Scheme, "http")
 }

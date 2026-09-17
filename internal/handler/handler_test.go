@@ -115,12 +115,12 @@ func TestWishlistResponsesPreserveItemsAndDate(t *testing.T) {
 }
 
 func TestValidURL(t *testing.T) {
-	for _, value := range []string{"", "https://example.com/gift?q=1", "http://localhost:8080/gift", "urn:isbn:0451450523", "mailto:test@example.com"} {
+	for _, value := range []string{"", "https://example.com/gift?q=1", "http://localhost:8080/gift"} {
 		if !validURL(value) {
 			t.Errorf("valid URI rejected: %q", value)
 		}
 	}
-	for _, value := range []string{"not a URL", "/relative", "https://", "http:///path", "https://exa mple.com", "https://example.com/%ZZ"} {
+	for _, value := range []string{"not a URL", "/relative", "https://", "http:///path", "https://exa mple.com", "https://example.com/%ZZ", "javascript:alert(1)", "data:text/html,x", "mailto:test@example.com", "https://user:pass@example.com/gift"} {
 		if validURL(value) {
 			t.Errorf("invalid URI accepted: %q", value)
 		}
