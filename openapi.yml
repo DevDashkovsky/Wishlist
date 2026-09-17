@@ -6,6 +6,7 @@ info:
     API for managing wishlists and gift items.
     JSON request bodies must be one object, at most 1 MiB including trailing whitespace.
     Unknown properties, null values and NUL characters are rejected with 422.
+    Malformed JSON is rejected with 400 and bodies over 1 MiB with 413.
     Titles must contain a non-whitespace character. Dates use YYYY-MM-DD, years 0001–9999.
     PUT replaces editable fields; PATCH changes only supplied fields; an empty PATCH is a no-op.
     Server failures return 500 with an Error object. Unknown routes and unsupported methods
@@ -48,6 +49,14 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: "password must contain 8 to 72 bytes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /auth/login:
     post:
@@ -77,6 +86,14 @@ paths:
 
         "422":
           $ref: "#/components/responses/ValidationError"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /wishlists:
     get:
@@ -95,6 +112,10 @@ paths:
                   $ref: "#/components/schemas/Wishlist"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
     post:
       summary: Create a wishlist
@@ -124,6 +145,14 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: title is required
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /wishlists/{id}:
     get:
@@ -158,6 +187,10 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: wishlist not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
     put:
       summary: Replace wishlist
@@ -197,6 +230,16 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: wishlist not found
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
     patch:
       summary: Partially update wishlist
@@ -236,6 +279,16 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: wishlist not found
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
     delete:
       summary: Delete wishlist
@@ -265,6 +318,10 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: wishlist not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /wishlists/{id}/items:
     post:
@@ -289,6 +346,18 @@ paths:
                 $ref: "#/components/schemas/Item"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Wishlist not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "422":
           description: Validation error
           content:
@@ -297,6 +366,14 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: title is required
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /wishlists/{id}/items/{itemId}:
     put:
@@ -338,6 +415,16 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: item not found
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
     patch:
       summary: Partially update item
@@ -378,6 +465,16 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: item not found
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
     delete:
       summary: Delete item
@@ -408,6 +505,10 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: item not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /shared/{token}:
     get:
@@ -434,17 +535,15 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: wishlist not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
   /shared/{token}/items/{itemId}/reserve:
     post:
       summary: Reserve an item (no auth)
       tags: [public]
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
       parameters:
         - name: token
           in: path
@@ -475,6 +574,10 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: item already reserved
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 
 components:
   securitySchemes:
@@ -484,6 +587,18 @@ components:
       bearerFormat: JWT
 
   responses:
+    BadRequest:
+      description: Request body is not valid JSON
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PayloadTooLarge:
+      description: Request body exceeds 1 MiB
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     ValidationError:
       description: Invalid request JSON or field value
       content:
@@ -498,6 +613,18 @@ components:
             $ref: "#/components/schemas/Error"
           example:
             error: unauthorized
+    GatewayTimeout:
+      description: Request processing exceeded the configured deadline
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
   parameters:
     WishlistId:
@@ -532,6 +659,7 @@ components:
 
     TokenResponse:
       type: object
+      required: [token]
       properties:
         token:
           type: string
@@ -566,6 +694,7 @@ components:
 
     Wishlist:
       type: object
+      required: [id, title, description, event_date, share_token, created_at, updated_at]
       properties:
         id:
           type: string
@@ -590,6 +719,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/Wishlist"
         - type: object
+          required: [items]
           properties:
             items:
               type: array
@@ -598,6 +728,7 @@ components:
 
     PublicWishlist:
       type: object
+      required: [id, title, description, event_date, created_at]
       properties:
         id:
           type: string
@@ -617,6 +748,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/PublicWishlist"
         - type: object
+          required: [items]
           properties:
             items:
               type: array
@@ -636,7 +768,7 @@ components:
           example: Cherry MX Brown switches
         url:
           type: string
-          description: "Optional absolute URI, or an empty string. HTTP(S) URIs must have a hostname."
+          description: "Optional absolute HTTP(S) URI without userinfo, or an empty string."
           example: https://example.com/keyboard
         priority:
           type: integer
@@ -655,7 +787,7 @@ components:
           type: string
         url:
           type: string
-          description: "Optional absolute URI, or an empty string. HTTP(S) URIs must have a hostname."
+          description: "Optional absolute HTTP(S) URI without userinfo, or an empty string."
         priority:
           type: integer
           minimum: 1
@@ -663,6 +795,7 @@ components:
 
     Item:
       type: object
+      required: [id, wishlist_id, title, description, url, priority, is_reserved, created_at, updated_at]
       properties:
         id:
           type: string
@@ -676,7 +809,7 @@ components:
           type: string
         url:
           type: string
-          description: "Optional absolute URI, or an empty string. HTTP(S) URIs must have a hostname."
+          description: "Optional absolute HTTP(S) URI without userinfo, or an empty string."
         priority:
           type: integer
         is_reserved:
@@ -690,6 +823,8 @@ components:
 
     Error:
       type: object
+      additionalProperties: false
+      required: [error]
       properties:
         error:
           type: string
