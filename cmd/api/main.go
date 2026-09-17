@@ -33,7 +33,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	if err := db.RunMigrations(cfg.DatabaseURL, cfg.MigrationsDir); err != nil {
+	if err := db.RunMigrations(ctx, cfg.DatabaseURL, cfg.MigrationsDir, cfg.MigrationTimeout); err != nil {
 		return fmt.Errorf("migrations: %w", err)
 	}
 
@@ -59,14 +59,14 @@ func run(ctx context.Context) error {
 	itemHandler := handler.NewItemHandler(itemService)
 	publicHandler := handler.NewPublicHandler(publicService)
 
-	router := handler.NewRouter(jwtManager, authHandler, wishlistHandler, itemHandler, publicHandler)
+	router := handler.NewRouter(cfg.RequestTimeout, pool.Ping, jwtManager, authHandler, wishlistHandler, itemHandler, publicHandler)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           router,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
+		WriteTimeout:      cfg.RequestTimeout + 5*time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 
@@ -75,7 +75,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("listen: %w", err)
 	}
 	log.Printf("listening on :%s", cfg.Port)
-	return serve(ctx, srv, listener, 10*time.Second)
+	return serve(ctx, srv, listener, cfg.RequestTimeout+5*time.Second)
 }
 
 func serve(ctx context.Context, srv *http.Server, listener net.Listener, timeout time.Duration) error {

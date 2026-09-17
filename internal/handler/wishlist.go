@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 	"wishlist-api/internal/domain"
@@ -24,7 +23,7 @@ func NewWishlistHandler(wishlists *service.WishlistService) *WishlistHandler {
 func (h *WishlistHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input domain.WishlistInput
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -86,7 +85,7 @@ func (h *WishlistHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	var input domain.WishlistInput
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -118,7 +117,7 @@ func (h *WishlistHandler) Patch(w http.ResponseWriter, r *http.Request) {
 
 	var input domain.WishlistPatch
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -166,7 +165,6 @@ func handleServiceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, service.ErrInvalidDate):
 		writeError(w, http.StatusUnprocessableEntity, "invalid date format, expected YYYY-MM-DD")
 	default:
-		log.Printf("internal error: %v", err)
-		writeError(w, http.StatusInternalServerError, "something went wrong")
+		handleUnexpectedError(w, err)
 	}
 }

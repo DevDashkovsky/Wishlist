@@ -72,6 +72,7 @@ func TestWishlistLifecycle(t *testing.T) {
 	}
 	c := client{strings.TrimRight(base, "/"), &http.Client{Timeout: 10 * time.Second}}
 	c.check(t, "GET", "/health", "", "", 200)
+	c.check(t, "GET", "/ready", "", "", 200)
 	const api = "/api/v1"
 	email := "e2e-" + uuid.NewString() + "@example.com"
 	credentials := fmt.Sprintf(`{"email":%q,"password":"test-password-123"}`, email)
@@ -92,8 +93,8 @@ func TestWishlistLifecycle(t *testing.T) {
 	path := api + "/wishlists/" + id
 	public := api + "/shared/" + share
 	t.Cleanup(func() { c.check(t, "DELETE", path, token, "", 204) })
-	for _, p := range []string{path, public} {
-		data := c.check(t, "GET", p, token, "", 200)
+	for _, request := range []struct{ path, token string }{{path, token}, {public, ""}} {
+		data := c.check(t, "GET", request.path, request.token, "", 200)
 		var obj map[string]json.RawMessage
 		if err := json.Unmarshal(data, &obj); err != nil {
 			t.Fatal(err)
@@ -101,15 +102,18 @@ func TestWishlistLifecycle(t *testing.T) {
 		if !bytes.Equal(obj["items"], []byte("[]")) {
 			t.Fatalf("empty items should be [], got %s", data)
 		}
-		if p == public && (obj["share_token"] != nil || obj["user_id"] != nil) {
+		if request.path == public && (obj["share_token"] != nil || obj["user_id"] != nil) {
 			t.Fatalf("private wishlist fields leaked: %s", data)
 		}
 	}
 	c.check(t, "GET", path, other, "", 403)
 	c.check(t, "PATCH", path, other, `{"title":"stolen"}`, 403)
 	c.check(t, "DELETE", path, other, "", 403)
-	for _, body := range []string{`{"title":""}`, `{"title":"   "}`, `{"event_date":"2027-02-30"}`, `{"title":"x"} {}`, `{"title":"x"}garbage`, `null`, `{"title":"\u0000"}`} {
+	for _, body := range []string{`{"title":""}`, `{"title":"   "}`, `{"event_date":"2027-02-30"}`, `null`, `{"title":"\u0000"}`} {
 		c.check(t, "PATCH", path, token, body, 422)
+	}
+	for _, body := range []string{`{"title":"x"} {}`, `{"title":"x"}garbage`} {
+		c.check(t, "PATCH", path, token, body, 400)
 	}
 	item := c.check(t, "POST", path+"/items", token, `{"title":"Keyboard","url":"https://example.com/keyboard"}`, 201)
 	itemID := field(t, item, "id")

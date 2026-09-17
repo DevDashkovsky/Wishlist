@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,6 +38,63 @@ func TestDecodeJSON(t *testing.T) {
 	}
 	if input.Priority != 0 {
 		t.Fatal("explicit zero replaced by default")
+	}
+}
+
+func TestDecodeErrorsUseDistinctStatuses(t *testing.T) {
+	auth := NewAuthHandler(nil)
+	router := chi.NewRouter()
+	router.Use(LimitBody)
+	router.Post("/register", auth.Register)
+
+	for _, tc := range []struct {
+		name string
+		body string
+		want int
+	}{
+		{name: "malformed", body: `{"email":`, want: http.StatusBadRequest},
+		{name: "semantic", body: `{"unknown":true}`, want: http.StatusUnprocessableEntity},
+		{name: "too large", body: `{"email":"` + strings.Repeat("a", maxRequestBody) + `"}`, want: http.StatusRequestEntityTooLarge},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(tc.body)))
+			if w.Code != tc.want {
+				t.Fatalf("got %d, want %d: %s", w.Code, tc.want, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestRecovererReturnsJSONError(t *testing.T) {
+	h := Recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic("boom")
+	}))
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/panic", nil))
+	if w.Code != http.StatusInternalServerError || w.Header().Get("Content-Type") != "application/json" {
+		t.Fatalf("unexpected response: status=%d content-type=%q body=%s", w.Code, w.Header().Get("Content-Type"), w.Body.String())
+	}
+}
+
+func TestReadinessReflectsDatabaseState(t *testing.T) {
+	dbDown := errors.New("database down")
+	for _, tc := range []struct {
+		name      string
+		readiness func(context.Context) error
+		want      int
+	}{
+		{name: "ready", readiness: func(context.Context) error { return nil }, want: http.StatusOK},
+		{name: "not ready", readiness: func(context.Context) error { return dbDown }, want: http.StatusServiceUnavailable},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			router := NewRouter(time.Second, tc.readiness, nil, nil, nil, nil, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/ready", nil))
+			if w.Code != tc.want {
+				t.Fatalf("got %d, want %d: %s", w.Code, tc.want, w.Body.String())
+			}
+		})
 	}
 }
 

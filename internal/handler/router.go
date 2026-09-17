@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"wishlist-api/internal/jwt"
 	"wishlist-api/internal/middleware"
@@ -10,6 +12,8 @@ import (
 )
 
 func NewRouter(
+	requestTimeout time.Duration,
+	readiness func(context.Context) error,
 	jwtManager *jwt.Manager,
 	auth *AuthHandler,
 	wishlists *WishlistHandler,
@@ -18,6 +22,8 @@ func NewRouter(
 ) *chi.Mux {
 	r := chi.NewRouter()
 
+	r.Use(middleware.Timeout(requestTimeout))
+	r.Use(Recoverer)
 	r.Use(LimitBody)
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "not found") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
@@ -25,6 +31,13 @@ func NewRouter(
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	r.Get("/ready", func(w http.ResponseWriter, r *http.Request) {
+		if err := readiness(r.Context()); err != nil {
+			writeError(w, http.StatusServiceUnavailable, "service unavailable")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 

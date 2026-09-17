@@ -8,7 +8,7 @@ import (
 func setRequiredEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("DATABASE_URL", "postgres://localhost/test")
-	t.Setenv("JWT_SECRET", "secret")
+	t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
 }
 
 func TestLoad_Defaults(t *testing.T) {
@@ -26,6 +26,12 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.MigrationsDir != "./migrations" {
 		t.Errorf("MigrationsDir = %q, want ./migrations", cfg.MigrationsDir)
+	}
+	if cfg.RequestTimeout != 10*time.Second {
+		t.Errorf("RequestTimeout = %v, want 10s", cfg.RequestTimeout)
+	}
+	if cfg.MigrationTimeout != time.Minute {
+		t.Errorf("MigrationTimeout = %v, want 1m", cfg.MigrationTimeout)
 	}
 }
 
@@ -49,10 +55,18 @@ func TestLoad_NonPositiveJWTExpiry(t *testing.T) {
 
 func TestLoad_MissingDatabaseURL(t *testing.T) {
 	t.Setenv("DATABASE_URL", "")
-	t.Setenv("JWT_SECRET", "secret")
+	t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
 
 	if _, err := Load(); err == nil {
 		t.Fatal("expected error when DATABASE_URL is missing, got nil")
+	}
+}
+
+func TestLoadRejectsWeakJWTSecret(t *testing.T) {
+	setRequiredEnv(t)
+	t.Setenv("JWT_SECRET", "secret")
+	if _, err := Load(); err == nil {
+		t.Fatal("weak JWT secret accepted")
 	}
 }
 
@@ -60,11 +74,16 @@ func TestLoadRejectsPortAndDurationOverflow(t *testing.T) {
 	for _, tc := range []struct{ key, value string }{
 		{"PORT", "0"}, {"PORT", "65536"}, {"PORT", "abc"},
 		{"JWT_EXPIRY_MINUTES", "153722868"}, {"JWT_EXPIRY_MINUTES", "9223372036854775807"},
+		{"REQUEST_TIMEOUT_SECONDS", "0"}, {"REQUEST_TIMEOUT_SECONDS", "abc"},
+		{"REQUEST_TIMEOUT_SECONDS", "301"},
+		{"MIGRATION_TIMEOUT_SECONDS", "0"}, {"MIGRATION_TIMEOUT_SECONDS", "9223372036854775807"},
 	} {
 		t.Run(tc.key+tc.value, func(t *testing.T) {
 			setRequiredEnv(t)
 			t.Setenv("PORT", "8080")
 			t.Setenv("JWT_EXPIRY_MINUTES", "60")
+			t.Setenv("REQUEST_TIMEOUT_SECONDS", "10")
+			t.Setenv("MIGRATION_TIMEOUT_SECONDS", "60")
 			t.Setenv(tc.key, tc.value)
 			if _, err := Load(); err == nil {
 				t.Fatal("invalid configuration accepted")

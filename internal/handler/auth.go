@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -21,7 +20,7 @@ func NewAuthHandler(auth *service.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var input domain.RegisterInput
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -42,8 +41,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Printf("internal error: %v", err)
-		writeError(w, http.StatusInternalServerError, "something went wrong")
+		handleUnexpectedError(w, err)
 		return
 	}
 
@@ -53,7 +51,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var input domain.LoginInput
 	if err := decodeJSON(r, &input); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "invalid request body")
+		handleDecodeError(w, err)
 		return
 	}
 
@@ -70,8 +68,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Printf("internal error: %v", err)
-		writeError(w, http.StatusInternalServerError, "something went wrong")
+		handleUnexpectedError(w, err)
 		return
 	}
 
