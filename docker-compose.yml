@@ -36,7 +36,8 @@ services:
       interval: 2s
       timeout: 3s
       retries: 20
-    stop_grace_period: 15s
+    # Allow the maximum request timeout (300s) plus the server's shutdown margin.
+    stop_grace_period: 310s
 
 volumes:
   postgres_data:
