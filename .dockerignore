@@ -3,6 +3,8 @@
 .claude
 .codex
 .agents
+.ai
+AGENTS.md
 .env
 **/.DS_Store
 bin
