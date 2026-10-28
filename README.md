@@ -212,6 +212,8 @@ curl -i -X POST "$BASE/shared/$SHARE_TOKEN/items/$ITEM_ID/reserve"
 
 ## Проверки
 
+[GitHub Actions](.github/workflows/ci.yml) запускает проверки для каждого PR в `main` и после каждого push в `main`: форматирование, сборку, `go vet`, линтер, unit- и PostgreSQL-тесты с race detector, а также HTTP E2E через Docker Compose. Проверки можно запустить вручную во вкладке Actions. Версия Go берётся из `go.mod`; тестовые БД и контейнеры изолированы от рабочей среды.
+
 ```bash
 make test
 make test-race
