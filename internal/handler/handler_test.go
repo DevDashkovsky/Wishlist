@@ -53,7 +53,9 @@ func TestDecodeErrorsUseDistinctStatuses(t *testing.T) {
 		want int
 	}{
 		{name: "malformed", body: `{"email":`, want: http.StatusBadRequest},
+		{name: "invalid UTF-8", body: "{\"email\":\"test-\xff@example.com\",\"password\":\"password\"}", want: http.StatusBadRequest},
 		{name: "semantic", body: `{"unknown":true}`, want: http.StatusUnprocessableEntity},
+		{name: "case mismatch", body: `{"EMAIL":"test@example.com","password":"password"}`, want: http.StatusUnprocessableEntity},
 		{name: "too large", body: `{"email":"` + strings.Repeat("a", maxRequestBody) + `"}`, want: http.StatusRequestEntityTooLarge},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -63,6 +65,43 @@ func TestDecodeErrorsUseDistinctStatuses(t *testing.T) {
 				t.Fatalf("got %d, want %d: %s", w.Code, tc.want, w.Body.String())
 			}
 		})
+	}
+}
+
+func TestDecodeJSONRejectsInvalidUTF8(t *testing.T) {
+	for _, body := range []string{
+		"{\"password\":\"password-\xff\"}",
+		"{\"email\":\"test-\xc0\xaf@example.com\"}",
+	} {
+		var input domain.RegisterInput
+		err := decodeJSON(httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)), &input)
+		if !errors.Is(err, errMalformedJSON) {
+			t.Errorf("body %q: got %v, want malformed JSON", body, err)
+		}
+	}
+}
+
+func TestDecodeJSONUsesExactFieldNames(t *testing.T) {
+	for _, body := range []string{
+		`{"TITLE":"gift"}`,
+		`{"Title":"gift"}`,
+		`{"title":"gift","Priority":5}`,
+		`{"title":"gift","priority":3,"PRIORITY":5}`,
+		`{"title":"gift","URL":"https://example.com"}`,
+	} {
+		var input domain.ItemInput
+		err := decodeJSON(httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)), &input)
+		if !errors.Is(err, errInvalidJSON) {
+			t.Errorf("body %s: got %v, want invalid JSON", body, err)
+		}
+	}
+	var input domain.ItemInput
+	body := `{"t\u0069tle":"Подарок 🎁 �","priority":5}`
+	if err := decodeJSON(httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)), &input); err != nil {
+		t.Fatal(err)
+	}
+	if input.Title != "Подарок 🎁 �" || input.Priority != 5 {
+		t.Fatalf("valid Unicode or escaped field name changed: %+v", input)
 	}
 }
 

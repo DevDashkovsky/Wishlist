@@ -74,6 +74,8 @@ func TestWishlistLifecycle(t *testing.T) {
 	c.check(t, "GET", "/health", "", "", 200)
 	c.check(t, "GET", "/ready", "", "", 200)
 	const api = "/api/v1"
+	c.check(t, "POST", api+"/auth/register", "", "{\"email\":\"test-\xff@example.com\",\"password\":\"test-password\"}", 400)
+	c.check(t, "POST", api+"/auth/register", "", `{"EMAIL":"invalid@example.com","password":"test-password"}`, 422)
 	email := "e2e-" + uuid.NewString() + "@example.com"
 	credentials := fmt.Sprintf(`{"email":%q,"password":"test-password-123"}`, email)
 	token := field(t, c.check(t, "POST", api+"/auth/register", "", credentials, 201), "token")
@@ -109,7 +111,7 @@ func TestWishlistLifecycle(t *testing.T) {
 	c.check(t, "GET", path, other, "", 403)
 	c.check(t, "PATCH", path, other, `{"title":"stolen"}`, 403)
 	c.check(t, "DELETE", path, other, "", 403)
-	for _, body := range []string{`{"title":""}`, `{"title":"   "}`, `{"event_date":"2027-02-30"}`, `null`, `{"title":"\u0000"}`} {
+	for _, body := range []string{`{"title":""}`, `{"title":"   "}`, `{"event_date":"2027-02-30"}`, `null`, `{"title":"\u0000"}`, `{"TITLE":"ignored typo"}`} {
 		c.check(t, "PATCH", path, token, body, 422)
 	}
 	for _, body := range []string{`{"title":"x"} {}`, `{"title":"x"}garbage`} {

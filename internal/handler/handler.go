@@ -9,8 +9,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"reflect"
 	"runtime/debug"
 	"strings"
+	"unicode/utf8"
 	"wishlist-api/internal/domain"
 )
 
@@ -78,6 +80,9 @@ func decodeJSON(r *http.Request, v any) error {
 	if len(data) > maxRequestBody {
 		return errBodyTooLarge
 	}
+	if !utf8.Valid(data) {
+		return fmt.Errorf("%w: invalid UTF-8", errMalformedJSON)
+	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
 		var syntaxErr *json.SyntaxError
@@ -89,7 +94,20 @@ func decodeJSON(r *http.Request, v any) error {
 	if fields == nil {
 		return fmt.Errorf("%w: expected object", errInvalidJSON)
 	}
-	for _, raw := range fields {
+	// Request DTOs are flat structs with explicit JSON tags. encoding/json
+	// otherwise matches field names case-insensitively, unlike our API schema.
+	typ := reflect.TypeOf(v).Elem()
+	allowed := make(map[string]struct{}, typ.NumField())
+	for i := 0; i < typ.NumField(); i++ {
+		name, _, _ := strings.Cut(typ.Field(i).Tag.Get("json"), ",")
+		if name != "" && name != "-" {
+			allowed[name] = struct{}{}
+		}
+	}
+	for name, raw := range fields {
+		if _, ok := allowed[name]; !ok {
+			return fmt.Errorf("%w: unknown field %q", errInvalidJSON, name)
+		}
 		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 			return fmt.Errorf("%w: null is not allowed", errInvalidJSON)
 		}

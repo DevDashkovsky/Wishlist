@@ -4,7 +4,8 @@ info:
   version: "1.0"
   description: |
     API for managing wishlists and gift items.
-    JSON request bodies must be one object, at most 1 MiB including trailing whitespace.
+    JSON request bodies must be UTF-8 encoded and contain one object, at most 1 MiB including trailing whitespace.
+    Property names are case-sensitive and must match the schema exactly.
     Unknown properties, null values and NUL characters are rejected with 422.
     Malformed JSON is rejected with 400 and bodies over 1 MiB with 413.
     Titles must contain a non-whitespace character. Dates use YYYY-MM-DD, years 0001–9999.
