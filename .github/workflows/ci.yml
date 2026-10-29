@@ -46,6 +46,8 @@ jobs:
         with:
           version: v2.13.2
           args: ./...
+      - name: Check load scenario error detection
+        run: make test-load-script
 
   tests:
     name: Race and PostgreSQL tests
